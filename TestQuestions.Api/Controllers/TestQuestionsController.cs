@@ -3,6 +3,9 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TestQuestions.Api;
+using TestQuestions.AppService;
+using TestQuestions.Core.Models;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -13,9 +16,8 @@ public class TestQuestionsController : ControllerBase
     private readonly IMapper _mapper;
     //private readonly ABC.TestQuestions.AppService.Interfaces.IDBRepo _repository;
 
-    public TestQuestionsController(CosmosDBRepository repository, TestAppService testAppService)
+    public TestQuestionsController(TestAppService testAppService)
     {
-        _repository = repository;
         _testAppService = testAppService;
         _mapper = MapperConfig.TestQuestionMapper();
     }
@@ -28,9 +30,9 @@ public class TestQuestionsController : ControllerBase
     //}
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<TestQuestionDto>> Get(string id)
+    public async Task<ActionResult<TestQuestionDto>> GetQuestion(string id)
     {
-        var question = await _testAppService.GetByIdAsync(id); // _repository.GetByIdAsync(id);
+        var question = await _testAppService.GetQuestionById(id); // _repository.GetByIdAsync(id);
        // var question =  _repository.GetByIdAsync(id);
         if (question == null)
             return NotFound();
@@ -43,24 +45,24 @@ public class TestQuestionsController : ControllerBase
     public async Task<ActionResult<TestQuestionDto>> Post(TestQuestionDto questionDto)
     {
         var question = _mapper.Map<TestQuestion>(questionDto);  
-        await _testAppService.AddAsync(question);
+        await _testAppService.AddNewQuestion(question);
        // await _repository.AddAsync(questionDto);
-        return CreatedAtAction(nameof(Get), new { id = questionDto.Id }, questionDto);
+        return CreatedAtAction(nameof(GetQuestion), new { id = questionDto.Id }, questionDto);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(string id, TestQuestionDto question)
+    public async Task<IActionResult> UpdateQuestion(string id, TestQuestionDto question)
     {
-        var existingQuestion = await _repository.GetByIdAsync(id);
+        var existingQuestion = await _testAppService.GetQuestionById(id);
         if (existingQuestion == null)
         {
             return NotFound();
         }
 
         existingQuestion.Question = question.Question;
-        existingQuestion.QuestionType = question.QuestionType;
+        existingQuestion.QuestionTypeId = question.QuestionTypeId;
 
-        await _repository.UpdateAsync(existingQuestion);
+        await _testAppService.UpdateQuestionAsync(existingQuestion);
 
         return NoContent();
     }
