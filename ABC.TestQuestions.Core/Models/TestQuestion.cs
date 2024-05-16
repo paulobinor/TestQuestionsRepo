@@ -6,12 +6,11 @@ public class TestQuestion
 {
 
     [JsonProperty("id")]
-    public string Id { get; set; }
+    public string Id { get; set; } =  Guid.NewGuid().ToString();
 
-    //[JsonProperty("myid")]
-    //public string myid { get; set; }
-    //[JsonProperty("Question")]
+    [JsonProperty("Question")]
     public string Question { get; set; }
-    [JsonProperty("QuestionType")]
+
+    [JsonProperty("QuestionTypeId")]
     public string QuestionTypeId { get; set; }
 }

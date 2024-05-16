@@ -1,3 +1,8 @@
+using TestQuestions.AppService.Interfaces;
+using TestQuestions.AppService;
+using TestQuestions.Repo;
+using TestQuestions.Core.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,6 +12,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddTransient<ITestQuestionsService, TestAppService>();
+
+builder.Services.AddTransient<IDBRepo, CosmosDbRepo>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

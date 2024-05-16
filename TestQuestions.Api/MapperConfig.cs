@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using System;
+using TestQuestions.Api.Dtos;
 
 namespace TestQuestions.Api
 {
@@ -12,6 +13,8 @@ namespace TestQuestions.Api
             {
                 cfg.CreateMap<TestQuestions.Core.Models.TestQuestion, TestQuestionDto>().ReverseMap();
                 cfg.CreateMap<TestQuestions.Core.Models.TestQuestion, CreateTestQuestionDto>().ReverseMap();
+                cfg.CreateMap<TestQuestions.Core.Models.QuestionType, QuestionTypeDto>().ReverseMap();
+                cfg.CreateMap<TestQuestions.Core.Models.ApplicationFormData, ApplicationFormDataDto>().ReverseMap();
             }).CreateMapper();
            
             return mapper;

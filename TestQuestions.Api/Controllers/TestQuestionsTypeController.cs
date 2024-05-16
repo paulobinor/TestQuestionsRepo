@@ -8,7 +8,7 @@ using TestQuestions.AppService;
 using TestQuestions.Core.Interfaces;
 using TestQuestions.Core.Models;
 
-[Route("api/[controller]")]
+[Route("api/QuestionType")]
 [ApiController]
 public class TestQuestionsTypeController : ControllerBase
 {
@@ -30,19 +30,19 @@ public class TestQuestionsTypeController : ControllerBase
     //    return Ok(questions);
     //}
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<TestQuestionDto>> GetQuestionType(string id)
-    {
-        var question = await _testAppService.GetTestQuestionById(id); // _repository.GetByIdAsync(id);
-       // var question =  _repository.GetByIdAsync(id);
-        if (question == null)
-            return NotFound();
+    //[HttpGet("get/{id}")]
+    //public async Task<ActionResult<TestQuestionDto>> GetQuestionType(string id)
+    //{
+    //    var question = await _testAppService.GetTestQuestionById(id); // _repository.GetByIdAsync(id);
+    //   // var question =  _repository.GetByIdAsync(id);
+    //    if (question == null)
+    //        return NotFound();
 
-        var questionDto = _mapper.Map<TestQuestionDto>(question);
-        return Ok(questionDto);
-    }
+    //    var questionDto = _mapper.Map<TestQuestionDto>(question);
+    //    return Ok(questionDto);
+    //}
 
-    [HttpGet("{questionTypeName}")]
+    [HttpGet("get/{questionTypeName}")]
     public async Task<IActionResult> GetByQuestionTypeName(string questionTypeName)
     {
         var questions = await _testAppService.GetTestQuestionType(questionTypeName);
@@ -52,10 +52,24 @@ public class TestQuestionsTypeController : ControllerBase
         }
         return Ok(questions);
     }
+    [HttpGet("list")]
+    public async Task<ActionResult<List<QuestionTypeDto>>> GetQuestionTypes()
+    {
+        var questionTypes = await _testAppService.GetAllQuestionTypesAsync(); 
+        if (questionTypes.Count() == 0)
+            return NotFound("No Question types where found");
 
-    [HttpPost]
+        var questionDto = _mapper.Map<List<QuestionTypeDto>>(questionTypes.ToList());
+        return Ok(questionDto);
+    }
+    [HttpPost("add")]
     public async Task<ActionResult<QuestionTypeDto>> AddNew(string questionTypeName)
     {
+        if (string.IsNullOrEmpty(questionTypeName))
+        {
+            return BadRequest("questionTypeName is required");
+
+        }
         var existingQuestion = await _testAppService.GetTestQuestionType(questionTypeName);
         if (existingQuestion != null)
         {
@@ -67,20 +81,24 @@ public class TestQuestionsTypeController : ControllerBase
         return Ok(_mapper.Map<QuestionTypeDto>(res));
     }
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateQuestionType(string id, TestQuestionDto question)
+    [HttpPut("update/{id}")]
+    public async Task<ActionResult<QuestionTypeDto>> UpdateQuestionType(string id, [FromBody] string questionTypeName)
     {
-        var existingQuestion = await _testAppService.GetTestQuestionById(id);
-        if (existingQuestion == null)
+        if (string.IsNullOrEmpty(questionTypeName))
+        {
+            return BadRequest("questionTypeName is required");
+
+        }
+        var updateQuestionType = await _testAppService.GetQuestionTypeByIdAsync(id);
+        if (updateQuestionType == null)
         {
             return NotFound();
         }
 
-        existingQuestion.Question = question.Question;
-        existingQuestion.QuestionTypeId = question.QuestionTypeId;
+        updateQuestionType.Name = questionTypeName;
 
-        await _testAppService.UpdateTestQuestionAsync(existingQuestion);
+        var res = await _testAppService.UpdateQuestionTypeAsync(updateQuestionType);
 
-        return NoContent();
+        return Ok(_mapper.Map<QuestionTypeDto>(res));
     }
 }
