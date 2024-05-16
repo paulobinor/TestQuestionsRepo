@@ -11,6 +11,7 @@ namespace TestQuestions.Repo
     {
         private readonly Microsoft.Azure.Cosmos.Container _questionsContainer;
         private readonly Microsoft.Azure.Cosmos.Container _questionTypeContainer;
+        private readonly Microsoft.Azure.Cosmos.Container _candidateFormDataContainer;
 
         public CosmosDbRepo(IConfiguration config)
         {
@@ -18,14 +19,16 @@ namespace TestQuestions.Repo
             var cosmosClient = new CosmosClient(cosmosSettings["EndpointUri"], cosmosSettings["PrimaryKey"]);
             var database = cosmosClient.GetDatabase(cosmosSettings["DatabaseName"]);
             _questionsContainer = database.GetContainer(cosmosSettings["QuestionsContainerName"]);
-            _questionTypeContainer = database.GetContainer(cosmosSettings["TestQuestionTypeContainer"]);
+            _questionTypeContainer = database.GetContainer(cosmosSettings["QuestionTypeContainerName"]);
+            _candidateFormDataContainer = database.GetContainer(cosmosSettings["CandidateFormDataContainerName"]);
+            
         }
 
-        public async Task AddTestQuestionAsync(TestQuestion question)
+        public async Task<TestQuestion> AddTestQuestionAsync(TestQuestion question)
         {
             try
             {
-                var res = await _questionsContainer.CreateItemAsync(question);
+               return await _questionsContainer.CreateItemAsync(question);
 
             }
             catch (Exception)
@@ -46,11 +49,9 @@ namespace TestQuestions.Repo
             }
         }
 
-        public async Task<IEnumerable<TestQuestion>> GetQuestionsByTypeAsync(string questionTypeName)
+        public async Task<IEnumerable<TestQuestion>> GetQuestionsByTypeAsync(string questionTypeId)
         {
-            var query = new QueryDefinition(
-             "SELECT q.* FROM TestQuestions q JOIN QuestionTypes qt ON q.QuestionTypeId = qt.Id " +
-             "WHERE qt.Name = @questionTypeName").WithParameter("@questionTypeName", questionTypeName);
+            var query = new QueryDefinition("SELECT * FROM c WHERE c.QuestionTypeId =@questionTypeId ").WithParameter("@questionTypeId", questionTypeId);
 
             var queryResult = _questionsContainer.GetItemQueryIterator<TestQuestion>(query);
 
@@ -87,7 +88,7 @@ namespace TestQuestions.Repo
         {
             try
             {
-                var res = await _questionsContainer.ReplaceItemAsync(question, question.Id, new PartitionKey(question.Id));
+                var res = await _questionsContainer.ReplaceItemAsync<TestQuestion>(question, question.Id, new PartitionKey(question.Id));
                 return res;
             }
             catch (Exception)
@@ -104,13 +105,24 @@ namespace TestQuestions.Repo
         //Question Types
         public async Task<QuestionType> AddNewQuestionTypeAsync(QuestionType questionType)
         {
-            var response = await _questionTypeContainer.CreateItemAsync(questionType, new PartitionKey(questionType.Id));
+           // questionType.questionTypeId = questionType.Id;
+            var response = await _questionTypeContainer.CreateItemAsync(questionType);
             return response.Resource;
         }
 
-        public async Task UpdateQuestionTypeAsync(QuestionType questionType)
+        public async Task<QuestionType> UpdateQuestionTypeAsync(QuestionType questionType)
         {
-            await _questionTypeContainer.ReplaceItemAsync(questionType, questionType.Id, new PartitionKey(questionType.Id));
+            try
+            {
+                
+                var res = await _questionTypeContainer.ReplaceItemAsync<QuestionType>(questionType, questionType.Id, new PartitionKey(questionType.Id));
+                return null;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         public async Task DeleteQuestionTypeAsync(string id)
@@ -118,14 +130,43 @@ namespace TestQuestions.Repo
             await _questionTypeContainer.DeleteItemAsync<QuestionType>(id, new PartitionKey(id));
         }
 
+
+        public async Task<QuestionType> GetQuestionTypeAsync(string questionType)
+        {
+            try
+            {
+                var query = new QueryDefinition("SELECT * FROM c WHERE c.Name = @name").WithParameter("@name", questionType);
+
+                var queryResultSetIterator = _questionTypeContainer.GetItemQueryIterator<QuestionType>(query);
+
+                if (queryResultSetIterator.HasMoreResults)
+                {
+                    var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    return currentResultSet.FirstOrDefault();
+                }
+                return null;
+            }
+            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
         public async Task<QuestionType> GetQuestionTypeByIdAsync(string id)
         {
             try
             {
+                //var query = new QueryDefinition("SELECT * FROM c WHERE c.id = @id").WithParameter("@id", id);
+
+                //var queryResultSetIterator = _questionTypeContainer.GetItemQueryIterator<QuestionType>(query);
+                //if (queryResultSetIterator.HasMoreResults)
+                //{
+                //    var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                //    return currentResultSet.FirstOrDefault();
+                //}
                 var response = await _questionTypeContainer.ReadItemAsync<QuestionType>(id, new PartitionKey(id));
                 return response.Resource;
             }
-            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            catch (CosmosException ex)  when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 return null;
             }
@@ -144,6 +185,12 @@ namespace TestQuestions.Repo
             }
 
             return results;
+        }
+
+        public async Task SubmitFormDataAsync(ApplicationFormData applicationFormData)
+        {
+            await _candidateFormDataContainer.CreateItemAsync(applicationFormData);
+           // return response.Resource;
         }
     }
 }

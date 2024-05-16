@@ -8,7 +8,7 @@ using TestQuestions.AppService;
 using TestQuestions.Core.Interfaces;
 using TestQuestions.Core.Models;
 
-[Route("api/QuestionType")]
+[Route("api/QuestionTypes")]
 [ApiController]
 public class TestQuestionsTypeController : ControllerBase
 {
